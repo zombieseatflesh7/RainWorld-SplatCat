@@ -60,35 +60,30 @@ namespace SplatCat
 
         public static void ModifySquish(ref float magnitude, ref float duration)
         {
-            float invMag = 1f / (1f - magnitude) - 1f;
-            invMag *= squishMultiplier;
-            magnitude = 1f - 1f / (invMag + 1f);
-
-            //duration *= squishDurationMultiplier;
-            duration = Mathf.Clamp01(1 - Mathf.Log(magnitude, 0.001f)) * decayTime * squishDurationMultiplier;
+            magnitude *= squishMultiplier;
+            duration = Mathf.Max(0, 1 - Mathf.Log(magnitude, 0.001f) ) * decayTime * squishDurationMultiplier * duration;
         }
 
         private void Creature_Violence(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
         {
             if ((self is Player ply) && directionAndMomentum.HasValue && TryGetDeform(ply, out DeformContainer deform))
             {
-                float magnitude = Mathf.Clamp01(Mathf.InverseLerp(0f, 2f, damage)) * 0.3f + 0.3f;
-                float duration = magnitude * 0.5f + 0.5f;
-                deform.Squish(hitChunk.pos + directionAndMomentum.Value.normalized * hitChunk.rad, directionAndMomentum.Value, magnitude, duration);
+                float magnitude = Mathf.Pow( Mathf.Clamp01(Mathf.InverseLerp(0f, 2f, damage)) * 2.5f, 2f);
+                deform.Squish(hitChunk.pos + directionAndMomentum.Value.normalized * hitChunk.rad, directionAndMomentum.Value, magnitude, 2f);
             }
             orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type, damage, stunBonus);
         }
 
         private void Player_TerrainImpact(On.Player.orig_TerrainImpact orig, Player self, int chunk, IntVector2 direction, float speed, bool firstContact)
         {
-            float magnitude = Mathf.Clamp01(Mathf.InverseLerp(10f, 40f, speed)) * 0.65f;
-            if (magnitude > 0f)
+            if (speed > 5f)
             {
+                float magnitude = Mathf.Pow(speed / 20f, 2f);
+            
                 if (TryGetDeform(self, out DeformContainer deform))
                 {
                     BodyChunk c = self.bodyChunks[chunk];
-                    float duration = Mathf.Clamp01(speed / 40f) * 0.15f + 0.35f;
-                    deform.Squish(c.pos + c.vel.normalized * c.rad, direction.ToVector2(), magnitude, duration);
+                    deform.Squish(c.pos + c.vel.normalized * c.rad, direction.ToVector2(), magnitude, 1f);
                 }
             }
             orig(self, chunk, direction, speed, firstContact);
@@ -176,6 +171,7 @@ namespace SplatCat
             public float animAxis;
             public float animStrength;
             public float animDuration;
+            public float animDecayRate;
             public bool updatedThisFrame = false;
 
             public DeformContainer(Player ply)
@@ -192,15 +188,17 @@ namespace SplatCat
 
             public void Squish(Vector2 center, Vector2 normal, float magnitude, float duration)
             {
-                ModifySquish(ref magnitude, ref duration);
+                magnitude *= squishMultiplier;
+                float inverseDecay = Mathf.Max(0, 1 - Mathf.Log(magnitude, 0.001f));
+                duration *= inverseDecay * decayTime * squishDurationMultiplier;
 
-                //if (animStrength * (1f - animPerc) > magnitude) return;
-                if (animStrength * Mathf.Pow(0.001f, animPerc * animDuration / (decayTime * squishDurationMultiplier) ) > magnitude) return;
+                if (animStrength * Mathf.Pow(0.001f, animPerc * animDuration * animDecayRate ) > magnitude) return;
                 animPerc = 0f;
                 animPoint = center - GetCenter();
                 animAxis = Mathf.Atan2(normal.y, normal.x) * Mathf.Rad2Deg;
                 animStrength = magnitude;
                 animDuration = Mathf.Max(duration, 0.00001f);
+                animDecayRate = inverseDecay / duration;
             }
 
             public void StartFrame()
@@ -252,15 +250,12 @@ namespace SplatCat
 
                     float axis = animAxis;
                     Vector2 scale;
-                    float coefficientOfSquish = Mathf.Sin(Mathf.Pow(animPerc * animDuration, 1.3f) * Mathf.PI * 15f * squishFrequencyMultiplier + Mathf.PI * 1.5f) //squish phase -1 ~ 1
-                        // * (1 - animPerc) old linear decay
-                        * Mathf.Pow(0.001f, animPerc * animDuration / (decayTime * squishDurationMultiplier)) //exponential decay
-                        * animStrength;
-                    // scale.x = coefficientOfSquish + 1f; old linear squish
-                    // scale.y = 1f / scale.x;
-                    coefficientOfSquish = (1f + Mathf.Min(coefficientOfSquish, 0)) / (1f - Mathf.Max(coefficientOfSquish, 0));
-                    scale.x = coefficientOfSquish; // direction of squish
-                    scale.y = 1f / scale.x; //perpendicular to squish
+                    float coefficientOfSquish = animStrength * Mathf.Pow(0.001f, animPerc * animDuration * animDecayRate); // total energy -- exponential decay -- magnitude -> 0.001
+                    coefficientOfSquish *= Mathf.Sin( 
+                        (animPerc * animDuration) / Mathf.Pow(coefficientOfSquish, 0.08f) // *= squish phase -1 ~ 1
+                        * Mathf.PI * 12f * squishFrequencyMultiplier + Mathf.PI * 1.5f);  // potential energy -- energy stored in squish
+                    scale.x = Mathf.Sqrt( (1f + Mathf.Max(0, coefficientOfSquish)) / (1f - Mathf.Min(0, coefficientOfSquish)) ); // actual squish scale -- 0 ~ infinity
+                    scale.y = 1f / Mathf.Sqrt(scale.x); 
 
                     for (int i = 0; i < 2; i++)
                     {

@@ -28,7 +28,7 @@ namespace SplatCat
             new SquishPreset("Default",       1f,    1f,    1f   ),
             new SquishPreset("Stone",         0f,    1f,    1f   ),
             new SquishPreset("Jello",         0.6f,  2f,    1.3f ),
-            new SquishPreset("Dough",         1f,    2f,    0f   ),
+            new SquishPreset("Dough",         1.5f,  3f,    0f   ),
             new SquishPreset("Water Balloon", 1.7f,  0.85f, 0.75f),
             new SquishPreset("Bouncy Ball",   1.25f, 0.7f,  1.5f ),
             new SquishPreset("Slow-mo",       1.5f,  3f,    0.25f),
