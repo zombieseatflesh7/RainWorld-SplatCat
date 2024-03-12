@@ -255,7 +255,7 @@ namespace SplatCat
                         (animPerc * animDuration) / Mathf.Pow(coefficientOfSquish, 0.08f) // *= squish phase -1 ~ 1
                         * Mathf.PI * 12f * squishFrequencyMultiplier + Mathf.PI * 1.5f);  // potential energy -- energy stored in squish
                     scale.x = Mathf.Sqrt( (1f + Mathf.Max(0, coefficientOfSquish)) / (1f - Mathf.Min(0, coefficientOfSquish)) ); // actual squish scale -- 0 ~ infinity
-                    scale.y = 1f / Mathf.Sqrt(scale.x); 
+                    scale.y = 1f / scale.x; 
 
                     for (int i = 0; i < 2; i++)
                     {
