@@ -9,7 +9,7 @@ using System.Security.Permissions;
 
 namespace SplatCat
 {
-    [BepInPlugin("SplatCat", "Splat Cat", "1.2")] // (GUID, mod name, mod version)
+    [BepInPlugin("SplatCat", "Splat Cat", "1.2.1")] // (GUID, mod name, mod version)
     public class SplatCat : BaseUnityPlugin
     {
         internal static List<DeformContainer> deforms = new List<DeformContainer>();
