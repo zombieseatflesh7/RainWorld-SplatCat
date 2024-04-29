@@ -9,7 +9,7 @@ using System.Security.Permissions;
 
 namespace SplatCat
 {
-    [BepInPlugin("SplatCat", "Splat Cat", "1.2.1")] // (GUID, mod name, mod version)
+    [BepInPlugin("SplatCat", "Splat Cat", "1.2.2")] // (GUID, mod name, mod version)
     public class SplatCat : BaseUnityPlugin
     {
         internal static List<DeformContainer> deforms = new List<DeformContainer>();
@@ -92,6 +92,10 @@ namespace SplatCat
         public static void PlayerGraphics_DrawSprites(On.PlayerGraphics.orig_DrawSprites orig, PlayerGraphics self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
         {
             orig(self, sLeaser, rCam, timeStacker, camPos);
+
+            if (rCam.cameraNumber != 0) // Skip if its not the main camera
+                return;
+
             if (TryGetDeform(self.owner as Player, out DeformContainer deform))
                 deform.DrawSprites(self, rCam, timeStacker);
         }
@@ -106,6 +110,12 @@ namespace SplatCat
         
         public static void PlayerGraphics_AddToContainer(On.PlayerGraphics.orig_AddToContainer orig, PlayerGraphics self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, FContainer newContatiner)
         {
+            if (rCam.cameraNumber != 0) // Skip if its not the main camera
+            {
+                orig(self, sLeaser, rCam, newContatiner);
+                return;
+            }
+
             if (!TryGetDeform(self.owner as Player, out DeformContainer deform))
             {
                 deform = new DeformContainer(self.owner as Player);

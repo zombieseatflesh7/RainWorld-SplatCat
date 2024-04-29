@@ -26,7 +26,6 @@ namespace SplatCat
         public static SquishPreset[] presets = new SquishPreset[]
         {
             new SquishPreset("Default",       1f,    1f,    1f   ),
-            new SquishPreset("Stone",         0f,    1f,    1f   ),
             new SquishPreset("Jello",         0.6f,  2f,    1.3f ),
             new SquishPreset("Dough",         1.5f,  3f,    0f   ),
             new SquishPreset("Water Balloon", 1.7f,  0.85f, 0.75f),
